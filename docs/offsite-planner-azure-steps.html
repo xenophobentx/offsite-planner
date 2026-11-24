@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Offsite Planner calls</title>
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one wide architecture diagram (4 lanes, left to right) above a step caption; packets travel along the wires. */
+:root {
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --ink: #1a1f29;
+  --muted: #5a6476;
+  --line: #d3dae6;
+  --wire: #b7c1d1;
+  --m365: #5b5fc7;
+  --azure: #0f6cbd;
+  --ext: #3c7a35;
+  --user: #5a6476;
+  --req: #d0510f;
+  --res: #1f8a3c;
+  --key: #b0850a;
+  --on-accent: #ffffff;
+  --focus: #0f6cbd;
+  --font: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10131a; --surface: #191e28; --ink: #e7ebf2; --muted: #9ba5b7; --line: #2d3544; --wire: #46506a;
+    --m365: #9094f5; --azure: #5aaef5; --ext: #7cc96e; --user: #9ba5b7;
+    --req: #ff8d4d; --res: #5fd17c; --key: #f0c34a; --on-accent: #0b1a2b; --focus: #5aaef5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10131a; --surface: #191e28; --ink: #e7ebf2; --muted: #9ba5b7; --line: #2d3544; --wire: #46506a;
+  --m365: #9094f5; --azure: #5aaef5; --ext: #7cc96e; --user: #9ba5b7;
+  --req: #ff8d4d; --res: #5fd17c; --key: #f0c34a; --on-accent: #0b1a2b; --focus: #5aaef5;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.55 var(--font);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 28px 48px; display: grid; gap: 18px; }
+
+header { display: grid; gap: 4px; }
+h1 { font: 700 clamp(22px, 3.2vw, 30px)/1.2 var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+.lede { margin: 0; color: var(--muted); max-width: 68ch; }
+kbd { font: 600 12px var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+
+/* Diagram */
+figure { margin: 0; display: grid; gap: 10px; }
+.diagram-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.diagram-scroll svg { display: block; width: 100%; min-width: 880px; height: auto; }
+
+.lane-label { font: 600 11px var(--font); letter-spacing: 0.09em; fill: var(--muted); }
+.grp-title { font: 700 16px var(--font-display); fill: var(--ink); }
+.grp-sub { font: 12px var(--font); fill: var(--muted); }
+.grp-note { font: 12px var(--font); fill: var(--muted); }
+.grp rect { fill: color-mix(in oklab, var(--lane) 6%, var(--surface)); stroke: color-mix(in oklab, var(--lane) 40%, var(--line)); stroke-width: 1.5; }
+.grp.dashed rect { stroke-dasharray: 6 5; }
+
+.node { transition: opacity 0.3s ease; }
+.node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; transition: stroke 0.25s ease, fill 0.25s ease; }
+.node .t1 { font: 600 15px var(--font); fill: var(--ink); }
+.node .t2 { font: 12px var(--font); fill: var(--muted); }
+.node.on rect { stroke: var(--lane); stroke-width: 2.5; fill: color-mix(in oklab, var(--lane) 13%, var(--surface)); }
+.stage.focus .node:not(.on) { opacity: 0.3; }
+
+.lane-user { --lane: var(--user); }
+.lane-m365 { --lane: var(--m365); }
+.lane-azure { --lane: var(--azure); }
+.lane-ext { --lane: var(--ext); }
+
+.edge { fill: none; stroke: var(--wire); stroke-width: 2; transition: stroke 0.25s ease, opacity 0.3s ease; }
+.stage.focus .edge:not(.on) { opacity: 0.35; }
+.edge.on { stroke: var(--ink); stroke-width: 2.5; }
+.edge-label { font: 600 10.5px var(--font-mono); fill: var(--muted); }
+
+.pkt { opacity: 0; stroke: var(--surface); stroke-width: 2.5; }
+.pkt.req { fill: var(--req); }
+.pkt.res { fill: var(--res); }
+.pkt.key { fill: var(--key); }
+
+.state rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.state text { font: 12.5px var(--font); fill: var(--ink); }
+.state circle { fill: var(--muted); transition: fill 0.25s ease; }
+.state[data-s="waking"] circle { fill: var(--key); }
+.state[data-s="running"] circle { fill: var(--res); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 13px; padding-inline: 4px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.legend .req { background: var(--req); }
+.legend .res { background: var(--res); }
+.legend .key { background: var(--key); }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+button {
+  font: 600 14px var(--font); color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px;
+  min-block-size: 40px; padding-inline: 14px; cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--azure); border-color: var(--azure); color: var(--on-accent); }
+button.primary:hover { background: color-mix(in oklab, var(--azure) 85%, var(--ink)); }
+button:disabled { opacity: 0.45; cursor: default; }
+:where(button, a):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.counter { font: 600 13px var(--font); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.dots { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.dots button { min-inline-size: 34px; min-block-size: 34px; padding: 0 6px; font: 600 13px var(--font); font-variant-numeric: tabular-nums; color: var(--muted); }
+.dots button[aria-current="step"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
+/* Caption */
+#caption {
+  view-transition-name: caption;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 20px 22px; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 860px) { #caption.has-code { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); } }
+.cap-text { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.eyebrow { font: 600 12px var(--font); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+#cap-title { font: 700 22px/1.25 var(--font-display); margin: 0; text-wrap: balance; }
+.who { justify-self: start; font: 600 13px var(--font); color: var(--azure); background: color-mix(in oklab, var(--azure) 10%, var(--surface)); border-radius: 999px; padding: 3px 12px; margin: 0; }
+#cap-body { margin: 0; max-width: 65ch; }
+#cap-code {
+  margin: 0; min-width: 0; overflow-x: auto; font: 12.5px/1.6 var(--font-mono);
+  background: color-mix(in oklab, var(--ink) 4%, var(--surface)); border: 1px solid var(--line);
+  border-radius: 8px; padding: 14px 16px; align-self: start; white-space: pre;
+}
+
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important; clip-path: inset(50%) !important; overflow: hidden !important;
+  width: 1px !important; height: 1px !important; margin: -1px !important; padding: 0 !important;
+  border: 0 !important; white-space: nowrap !important;
+}
+
+/* View transition: only the caption animates; the diagram swaps instantly so packets stay live. */
+::view-transition-old(root) { display: none; }
+::view-transition-new(root) { animation: none; }
+::view-transition-group(caption) { animation-duration: 0.32s; animation-timing-function: ease-in-out; }
+@keyframes cap-out-left { to { transform: translateX(-28px); opacity: 0; } }
+@keyframes cap-in-right { from { transform: translateX(28px); opacity: 0; } }
+@keyframes cap-out-right { to { transform: translateX(28px); opacity: 0; } }
+@keyframes cap-in-left { from { transform: translateX(-28px); opacity: 0; } }
+html:active-view-transition-type(forward)::view-transition-old(caption) { animation: 0.2s ease-in both cap-out-left; }
+html:active-view-transition-type(forward)::view-transition-new(caption) { animation: 0.32s ease-out both cap-in-right; }
+html:active-view-transition-type(backward)::view-transition-old(caption) { animation: 0.2s ease-in both cap-out-right; }
+html:active-view-transition-type(backward)::view-transition-new(caption) { animation: 0.32s ease-out both cap-in-left; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Who calls Azure, and when?</h1>
+    <p class="lede">One full Offsite Planner run in 12 steps. Step through with the buttons or the <kbd>←</kbd> <kbd>→</kbd> keys. The coloured dots show where each request and response travels.</p>
+  </header>
+
+  <main style="display:grid; gap:16px;">
+    <figure>
+      <div class="diagram-scroll">
+        <svg id="stage" class="stage" viewBox="0 0 1080 530" role="img" aria-label="Offsite Planner architecture: you type in the Cowork window; Cowork runs in the Microsoft cloud and is the only caller of the Azure Function App at /mcp over HTTPS; inside the Function App the Functions host forwards requests to the Node.js MCP server, which uses a Table cache and Key Vault; the server fetches public holidays, weather, exchange rates, flights and hotels from external services.">
+          <!-- lane labels -->
+          <text class="lane-label" x="95" y="56" text-anchor="middle">YOU</text>
+          <text class="lane-label" x="300" y="56" text-anchor="middle">MICROSOFT 365</text>
+          <text class="lane-label" x="615" y="56" text-anchor="middle">AZURE</text>
+          <text class="lane-label" x="940" y="56" text-anchor="middle">EXTERNAL DATA</text>
+
+          <!-- groups -->
+          <g class="grp lane-m365">
+            <rect x="200" y="80" width="200" height="420" rx="14"/>
+            <text class="grp-title" x="300" y="112" text-anchor="middle">Copilot Cowork</text>
+            <text class="grp-sub" x="300" y="131" text-anchor="middle">Microsoft cloud</text>
+            <text class="grp-note" x="300" y="452" text-anchor="middle">Only Cowork</text>
+            <text class="grp-note" x="300" y="469" text-anchor="middle">calls Azure.</text>
+          </g>
+          <g class="grp dashed lane-azure">
+            <rect x="450" y="80" width="330" height="430" rx="14"/>
+            <text class="grp-title" x="615" y="112" text-anchor="middle">Function App</text>
+            <text class="grp-sub" x="615" y="131" text-anchor="middle">rg-offsite-planner · Flex Consumption</text>
+          </g>
+
+          <!-- function state pill -->
+          <g id="fstate" class="state" data-s="sleep">
+            <rect x="470" y="148" width="290" height="34" rx="17"/>
+            <circle cx="492" cy="165" r="5"/>
+            <text id="fstate-text" x="506" y="169.5">State: asleep · 0 instances</text>
+          </g>
+
+          <!-- wires -->
+          <path id="e-user" class="edge" d="M160 260 H200"/>
+          <path id="e-ch" class="edge" d="M400 260 H470"/>
+          <path id="e-hn" class="edge" d="M605 260 H635"/>
+          <path id="e-kv" class="edge" d="M537 360 V305"/>
+          <path id="e-nc" class="edge" d="M697 305 V360"/>
+          <path id="e-s0" class="edge" d="M760 260 C798 260 792 142 830 142"/>
+          <path id="e-s1" class="edge" d="M760 260 C798 260 792 222 830 222"/>
+          <path id="e-s2" class="edge" d="M760 260 C798 260 792 302 830 302"/>
+          <path id="e-s3" class="edge" d="M760 260 C798 260 792 382 830 382"/>
+          <path id="e-s4" class="edge" d="M760 260 C798 260 792 462 830 462"/>
+          <text class="edge-label" x="435" y="250" text-anchor="middle">HTTPS POST</text>
+          <text class="edge-label" x="435" y="279" text-anchor="middle">/mcp</text>
+
+          <!-- nodes -->
+          <g class="node lane-user" data-id="user">
+            <rect x="30" y="215" width="130" height="90" rx="10"/>
+            <text class="t1" x="95" y="256" text-anchor="middle">You</text>
+            <text class="t2" x="95" y="275" text-anchor="middle">Cowork window</text>
+          </g>
+          <g class="node lane-m365" data-id="skill">
+            <rect x="220" y="160" width="160" height="60" rx="9"/>
+            <text class="t1" x="300" y="186" text-anchor="middle">Skill</text>
+            <text class="t2" x="300" y="205" text-anchor="middle">the recipe: SKILL.md</text>
+          </g>
+          <g class="node lane-m365" data-id="graph">
+            <rect x="220" y="240" width="160" height="60" rx="9"/>
+            <text class="t1" x="300" y="266" text-anchor="middle">Entra + calendar</text>
+            <text class="t2" x="300" y="285" text-anchor="middle">who is where, who is free</text>
+          </g>
+          <g class="node lane-m365" data-id="docs">
+            <rect x="220" y="320" width="160" height="60" rx="9"/>
+            <text class="t1" x="300" y="346" text-anchor="middle">Excel, e-mail</text>
+            <text class="t2" x="300" y="365" text-anchor="middle">the finished paperwork</text>
+          </g>
+          <g class="node lane-azure" data-id="host">
+            <rect x="470" y="215" width="135" height="90" rx="10"/>
+            <text class="t1" x="537.5" y="256" text-anchor="middle">Functions host</text>
+            <text class="t2" x="537.5" y="275" text-anchor="middle">gateway, forwards</text>
+          </g>
+          <g class="node lane-azure" data-id="node">
+            <rect x="635" y="215" width="125" height="90" rx="10"/>
+            <text class="t1" x="697.5" y="256" text-anchor="middle">MCP server</text>
+            <text class="t2" x="697.5" y="275" text-anchor="middle">Node.js + Express</text>
+          </g>
+          <g class="node lane-azure" data-id="kv">
+            <rect x="470" y="360" width="135" height="64" rx="9"/>
+            <text class="t1" x="537.5" y="388" text-anchor="middle">Key Vault</text>
+            <text class="t2" x="537.5" y="407" text-anchor="middle">SerpApi key</text>
+          </g>
+          <g class="node lane-azure" data-id="cache">
+            <rect x="635" y="360" width="125" height="64" rx="9"/>
+            <text class="t1" x="697.5" y="388" text-anchor="middle">Table cache</text>
+            <text class="t2" x="697.5" y="407" text-anchor="middle">saved responses</text>
+          </g>
+          <g class="node lane-azure" data-id="insights">
+            <rect x="470" y="444" width="290" height="44" rx="9"/>
+            <text class="t2" x="615" y="470.5" text-anchor="middle">Application Insights · logs</text>
+          </g>
+          <g class="node lane-ext" data-id="s0">
+            <rect x="830" y="110" width="220" height="64" rx="9"/>
+            <text class="t1" x="940" y="138" text-anchor="middle">Public holidays</text>
+            <text class="t2" x="940" y="157" text-anchor="middle">Nager.Date</text>
+          </g>
+          <g class="node lane-ext" data-id="s1">
+            <rect x="830" y="190" width="220" height="64" rx="9"/>
+            <text class="t1" x="940" y="218" text-anchor="middle">Weather</text>
+            <text class="t2" x="940" y="237" text-anchor="middle">Open-Meteo, last 3 years</text>
+          </g>
+          <g class="node lane-ext" data-id="s2">
+            <rect x="830" y="270" width="220" height="64" rx="9"/>
+            <text class="t1" x="940" y="298" text-anchor="middle">Exchange rates</text>
+            <text class="t2" x="940" y="317" text-anchor="middle">ECB (Frankfurter)</text>
+          </g>
+          <g class="node lane-ext" data-id="s3">
+            <rect x="830" y="350" width="220" height="64" rx="9"/>
+            <text class="t1" x="940" y="378" text-anchor="middle">Flights</text>
+            <text class="t2" x="940" y="397" text-anchor="middle">Google Flights · SerpApi</text>
+          </g>
+          <g class="node lane-ext" data-id="s4">
+            <rect x="830" y="430" width="220" height="64" rx="9"/>
+            <text class="t1" x="940" y="458" text-anchor="middle">Hotels</text>
+            <text class="t2" x="940" y="477" text-anchor="middle">Google Hotels · SerpApi</text>
+          </g>
+
+          <g id="packets"></g>
+        </svg>
+      </div>
+      <figcaption class="legend">
+        <span><i class="req"></i>request</span>
+        <span><i class="res"></i>response or cache write</span>
+        <span><i class="key"></i>secret from Key Vault</span>
+      </figcaption>
+    </figure>
+
+    <nav class="controls" aria-label="Steps">
+      <div class="btns">
+        <button type="button" id="prev">← Previous</button>
+        <button type="button" id="play">Play</button>
+        <button type="button" id="next" class="primary">Next →</button>
+        <button type="button" id="replay">Replay</button>
+      </div>
+      <span class="counter" id="counter"></span>
+      <ol class="dots" id="dots"></ol>
+    </nav>
+
+    <section id="caption" aria-labelledby="cap-title">
+      <div class="cap-text">
+        <p class="eyebrow" id="cap-eyebrow"></p>
+        <h2 id="cap-title"></h2>
+        <p class="who" id="cap-who"></p>
+        <p id="cap-body"></p>
+      </div>
+      <pre id="cap-code"></pre>
+    </section>
+    <div class="visually-hidden" aria-live="polite" id="announce"></div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const R = 'req', S = 'res', K = 'key';
+
+  const STEPS = [
+    {
+      title: 'Overview', who: 'Nobody is calling anyone yet', state: 'sleep', on: [], edges: [],
+      body: 'There are four parties. You type in the Cowork window. Cowork runs in the Microsoft cloud, and it is the only one that talks to Azure. In Azure the Function App is waiting, but no instance is running, so it costs nothing. The external data sources are on the right.',
+      code: '// Cowork calls this one URL\nhttps://func-offsite-mcp-….azurewebsites.net/mcp'
+    },
+    {
+      title: 'You type the request', who: 'You → Cowork', state: 'sleep',
+      on: ['user', 'skill'], edges: ['e-user'],
+      body: 'The request goes to Cowork. Your computer never calls Azure directly. Cowork matches the request to the Offsite Planner skill by its description, and the skill tells it what to do.',
+      code: '"Plan a June offsite for my team.\n Compare three destinations."',
+      flow: s => { s(0, R, ['e-user']); }
+    },
+    {
+      title: 'Handshake: initialize', who: 'Cowork → Function App', state: 'waking',
+      on: ['host'], edges: ['e-ch'],
+      body: 'Cowork sends an HTTPS POST to /mcp in JSON-RPC format. The first message is initialize, which asks the server who it is. The request reaches the Azure gateway, but the Function App is asleep, so the request has to wait.',
+      code: 'POST /mcp\n{ "jsonrpc": "2.0", "id": 1,\n  "method": "initialize",\n  "params": { "protocolVersion": "…",\n              "clientInfo": { … } } }',
+      flow: s => { s(0, R, ['e-ch']); }
+    },
+    {
+      title: 'Cold start', who: 'Inside Azure, then Function App → Cowork', state: 'running',
+      on: ['host', 'node', 'kv'], edges: ['e-kv', 'e-hn', 'e-ch'],
+      body: 'Azure starts an instance. At startup it reads the SerpApi key from Key Vault and passes it to the app as an environment variable. The Node.js server starts, and the Functions host forwards the request to it unchanged. The server answers with its name and version. This first response takes a few seconds longer than the others.',
+      code: '{ "jsonrpc": "2.0", "id": 1,\n  "result": {\n    "serverInfo": { "name": "offsite-data",\n                    "version": "0.1.0" },\n    "capabilities": { "tools": {} } } }',
+      flow: s => { let t = s(0, K, ['e-kv']); t = s(t + 150, R, ['e-hn']); s(t + 150, S, ['-e-hn', '-e-ch']); }
+    },
+    {
+      title: 'What can you do? tools/list', who: 'Cowork → Function App', state: 'running',
+      on: ['host', 'node'], edges: ['e-ch', 'e-hn'],
+      body: 'Cowork asks for the list of tools. Two come back, each with a description and its parameters. The instance is already running, so this is fast. The server keeps nothing between calls: it builds a fresh MCP server for every request.',
+      code: '{ "method": "tools/list" }\n\n→ plan_dates            free date windows\n→ compare_destinations  ranked destinations',
+      flow: s => { const t = s(0, R, ['e-ch', 'e-hn']); s(t + 120, S, ['-e-hn', '-e-ch']); }
+    },
+    {
+      title: 'Who is where?', who: 'Cowork ↔ Microsoft 365, Azure not involved', state: 'running',
+      on: ['graph'], edges: [],
+      body: 'Cowork looks up your direct reports in Entra and the city each of them works in, then groups people by city. Azure never gets names, only cities and head counts.',
+      code: '// example\n[ { "city": "Budapest", "count": 4 },\n  { "city": "London",   "count": 3 },\n  { "city": "Berlin",   "count": 2 },\n  { "city": "Madrid",   "count": 1 } ]'
+    },
+    {
+      title: 'First call: plan_dates', who: 'Cowork → Function App → Nager.Date', state: 'running',
+      on: ['host', 'node', 'cache', 's0'], edges: ['e-ch', 'e-hn', 'e-nc', 'e-s0'],
+      body: 'In go the country codes, the year and the month. The server first checks the Table cache for the same request. If it is not there, it fetches the public holidays from Nager.Date and caches them for a year. Up to five free date windows come back.',
+      code: '{ "method": "tools/call",\n  "params": {\n    "name": "plan_dates",\n    "arguments": {\n      "countries": ["HU", "GB", "DE", "ES"],\n      "year": 2027, "month": 6 } } }',
+      flow: s => {
+        let t = s(0, R, ['e-ch', 'e-hn', 'e-nc']);
+        t = s(t + 80, S, ['-e-nc']);
+        t = s(t + 80, R, ['e-s0']);
+        t = s(t + 120, S, ['-e-s0']);
+        s(t + 80, S, ['e-nc']);
+        s(t + 80, S, ['-e-hn', '-e-ch']);
+      }
+    },
+    {
+      title: 'Who is free?', who: 'Cowork ↔ Microsoft 365', state: 'running',
+      on: ['graph'], edges: [],
+      body: 'Cowork checks the team\'s calendars for the returned windows and picks the one where most people are free. This also stays inside Microsoft 365.',
+      code: '// example\n2027-06-08 → 06-10    9/10 free\n2027-06-15 → 06-17   10/10 free   ✓'
+    },
+    {
+      title: 'Second call: compare_destinations', who: 'Cowork → Function App', state: 'running',
+      on: ['host', 'node'], edges: ['e-ch', 'e-hn'],
+      body: 'In go the cities with head counts, the outbound and return dates, and the destinations if you named any. If you did not, the server picks three itself.',
+      code: '{ "name": "compare_destinations",\n  "arguments": {\n    "origins": [ { "city": "Budapest",\n                   "count": 4 }, … ],\n    "date": "2027-06-15",\n    "return_date": "2027-06-17" } }',
+      flow: s => { s(0, R, ['e-ch', 'e-hn']); }
+    },
+    {
+      title: 'Gathering data in parallel', who: 'Function App → external data sources', state: 'running',
+      on: ['node', 'cache', 's1', 's2', 's3', 's4'], edges: ['e-nc', 'e-s1', 'e-s2', 'e-s3', 'e-s4'],
+      body: 'The server checks the cache first. Whatever is missing, it fetches in stages: first 12 flight routes (4 origin cities × 3 destinations, at most 6 at once), then 3 hotel lists, then exchange rates, then the weather for the same month in the last 3 years. SerpApi fetches flights and hotels from Google, using the key from Key Vault. Cowork waits at most 30 seconds for a tool call.',
+      code: '// cache: how long a saved response is used\npublic holidays  1 year\nweather          30 days\nexchange rates   1 day\nflights          6 hours\nhotels           6 hours',
+      flow: s => {
+        let t = s(0, R, ['e-nc']);
+        t = s(t + 60, S, ['-e-nc']) + 100;
+        const jobs = [['e-s3', 0], ['e-s3', 160], ['e-s3', 320], ['e-s4', 80], ['e-s4', 240], ['e-s2', 120], ['e-s1', 200]];
+        let end = t;
+        for (const [e, o] of jobs) {
+          const back = s(t + o, R, [e]);
+          end = Math.max(end, s(back + 160, S, ['-' + e]));
+        }
+        s(end + 80, S, ['e-nc']);
+      }
+    },
+    {
+      title: 'Scoring and response', who: 'Function App → Cowork', state: 'running',
+      on: ['host', 'node'], edges: ['e-hn', 'e-ch'],
+      body: 'The server converts everything to euros, estimates CO₂, and scores each destination: cost 35%, travel time 25%, weather 15%, CO₂ 15%, stops 10%. Cowork gets back about 4 KB of JSON.',
+      code: '{ "rank": 1, "city": "Barcelona",\n  "score": 96,\n  "flights_cost_eur": 1086,\n  "hotel_cost_eur": 2160,\n  "total_cost_eur": 3246, … }',
+      flow: s => { s(0, S, ['-e-hn', '-e-ch']); }
+    },
+    {
+      title: 'Paperwork and approval', who: 'Cowork → You', state: 'running',
+      on: ['docs', 'user'], edges: ['e-user'],
+      body: 'Cowork builds the Excel comparison, drafts the vote email and proposes a calendar hold. Nothing goes out until you approve it. It never books flights or hotels.',
+      code: 'Offsite comparison June 2027.xlsx\nEmail draft: Team offsite … vote for the destination\nCalendar: HOLD – Team offsite   (tentative)',
+      flow: s => { s(0, S, ['-e-user']); }
+    },
+    {
+      title: 'Quiet again', who: 'Nobody is calling anyone', state: 'sleep',
+      on: ['insights'], edges: [],
+      body: 'When no calls come in for a while, Azure stops the instance and scales back to zero. Every call is logged in Application Insights, capped at 0.1 GB a day. One full run costs about 47 Copilot Credits on the Cowork side and uses 15 SerpApi searches.',
+      code: 'Cowork:   ~47 Copilot Credits ≈ $0.47\nSerpApi:  12 flights + 3 hotels = 15 searches\nAzure:    0 instances while idle'
+    }
+  ];
+  const LAST = STEPS.length - 1;
+  const STATE_TEXT = {
+    sleep: 'State: asleep · 0 instances',
+    waking: 'State: waking · starting an instance…',
+    running: 'State: running · 1 instance'
+  };
+
+  const $ = id => document.getElementById(id);
+  const stage = $('stage'), layer = $('packets'), fstate = $('fstate'), fstateText = $('fstate-text');
+  const nodes = [...stage.querySelectorAll('.node')];
+  const edges = [...stage.querySelectorAll('.edge')];
+  const cap = $('caption');
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  let reduced = reduce.matches;
+  reduce.addEventListener('change', e => { reduced = e.matches; if (reduced) clearPackets(); });
+
+  let cur = 0, playing = false, timer = 0;
+
+  // dots
+  const dots = $('dots');
+  STEPS.forEach((st, i) => {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = i === 0 ? '0' : String(i);
+    b.setAttribute('aria-label', (i === 0 ? 'Overview' : 'Step ' + i) + ': ' + st.title);
+    b.addEventListener('click', () => go(i));
+    li.append(b);
+    dots.append(li);
+  });
+  const dotBtns = [...dots.querySelectorAll('button')];
+
+  function label(i) { return i === 0 ? 'Overview' : 'Step ' + i + ' of ' + LAST; }
+
+  function apply(i) {
+    const st = STEPS[i];
+    $('cap-eyebrow').textContent = label(i);
+    $('cap-title').textContent = st.title;
+    $('cap-who').textContent = st.who;
+    $('cap-body').textContent = st.body;
+    const code = $('cap-code');
+    code.textContent = st.code || '';
+    code.hidden = !st.code;
+    cap.classList.toggle('has-code', !!st.code);
+
+    stage.classList.toggle('focus', st.on.length > 0);
+    nodes.forEach(n => n.classList.toggle('on', st.on.includes(n.dataset.id)));
+    edges.forEach(e => e.classList.toggle('on', st.edges.includes(e.id)));
+    fstate.dataset.s = st.state;
+    fstateText.textContent = STATE_TEXT[st.state];
+
+    $('counter').textContent = i + ' / ' + LAST;
+    $('prev').disabled = i === 0;
+    $('next').disabled = i === LAST;
+    dotBtns.forEach((b, k) => k === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current'));
+    $('announce').textContent = label(i) + ': ' + st.title + '. ' + st.who + '.';
+    try { history.replaceState(null, '', '#step-' + i); } catch (_) {}
+  }
+
+  function clearPackets() {
+    for (const a of layer.getAnimations({ subtree: true })) a.cancel();
+    layer.replaceChildren();
+  }
+
+  // Builds packet hops along wires. A leading "-" on an edge id means: travel it backwards.
+  function runFlow(i) {
+    clearPackets();
+    const st = STEPS[i];
+    if (reduced || !st.flow) return 0;
+    let total = 0;
+    const s = (start, kind, list) => {
+      let at = start;
+      for (const raw of list) {
+        const rev = raw.startsWith('-');
+        const path = $(rev ? raw.slice(1) : raw);
+        const len = path.getTotalLength();
+        const dur = Math.min(1100, Math.max(420, len * 4.2));
+        packet(path, len, rev, kind, at, dur);
+        at += dur + 40;
+      }
+      total = Math.max(total, at);
+      return at;
+    };
+    st.flow(s);
+    return total;
+  }
+
+  function packet(path, len, rev, kind, delay, dur) {
+    const n = Math.max(8, Math.round(len / 10));
+    const frames = [];
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const p = path.getPointAtLength((rev ? 1 - t : t) * len);
+      frames.push({ transform: `translate(${p.x}px, ${p.y}px)`, opacity: 1 });
+    }
+    const c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('r', '7');
+    c.setAttribute('class', 'pkt ' + kind);
+    layer.append(c);
+    const a = c.animate(frames, { duration: dur, delay, easing: 'ease-in-out', fill: 'none' });
+    a.onfinish = () => c.remove();
+  }
+
+  function go(i, dir) {
+    i = Math.max(0, Math.min(LAST, i));
+    if (!dir) dir = i >= cur ? 'forward' : 'backward';
+    const from = cur;
+    cur = i;
+    clearPackets();
+    const done = () => { const ms = runFlow(i); schedule(ms); };
+    if (!document.startViewTransition || from === i) { apply(i); done(); return; }
+    let t;
+    try { t = document.startViewTransition({ update: () => apply(i), types: [dir] }); }
+    catch (_) { t = document.startViewTransition(() => apply(i)); }
+    t.ready.catch(() => {});
+    t.finished.finally(() => { if (cur === i) done(); });
+  }
+
+  function schedule(ms) {
+    clearTimeout(timer);
+    if (!playing) return;
+    timer = setTimeout(() => {
+      if (cur < LAST) go(cur + 1, 'forward'); else stop();
+    }, (ms || 0) + 5500);
+  }
+  function play() {
+    playing = true;
+    $('play').textContent = 'Pause';
+    if (cur === LAST) go(0, 'backward'); else schedule(0);
+  }
+  function stop() {
+    playing = false;
+    clearTimeout(timer);
+    $('play').textContent = 'Play';
+  }
+
+  $('prev').addEventListener('click', () => go(cur - 1, 'backward'));
+  $('next').addEventListener('click', () => go(cur + 1, 'forward'));
+  $('replay').addEventListener('click', () => { const ms = runFlow(cur); schedule(ms); });
+  $('play').addEventListener('click', () => playing ? stop() : play());
+
+  document.addEventListener('keydown', e => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); go(cur + 1, 'forward'); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); go(cur - 1, 'backward'); }
+    else if (e.key === 'Home') { e.preventDefault(); go(0, 'backward'); }
+    else if (e.key === 'End') { e.preventDefault(); go(LAST, 'forward'); }
+  });
+
+  function fromHash() {
+    const m = /^#step-(\d+)$/.exec(location.hash);
+    return m ? Math.min(LAST, Number(m[1])) : 0;
+  }
+  window.addEventListener('hashchange', () => { const i = fromHash(); if (i !== cur) go(i); });
+
+  cur = fromHash();
+  apply(cur);
+  runFlow(cur);
+})();
+</script>
+</body>
+</html>

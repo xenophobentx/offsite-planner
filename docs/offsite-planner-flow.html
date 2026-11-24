@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Offsite Planner flow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: Fluent 2 page. Header with gradient rule, one flowchart card in three lanes (Microsoft 365 / Azure / public data), three fact cards. */
+:root {
+  --bg: #f5f5f5;
+  --card: #ffffff;
+  --fg1: #242424;
+  --fg2: #424242;
+  --fg3: #616161;
+  --stroke: #e0e0e0;
+  --brand: #0f6cbd;
+  --brand-soft: #ebf3fc;
+  --teal: #03787c;
+  --teal-soft: #e6f5f5;
+  --orange: #bc4b09;
+  --orange-soft: #fdf3ec;
+  --lane1: #f3f8fe;
+  --lane2: #f1f9f9;
+  --lane3: #fdf8f4;
+  --shadow: 0 2px 4px rgba(0,0,0,.14), 0 0 2px rgba(0,0,0,.12);
+  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141414; --card: #292929; --fg1: #ffffff; --fg2: #d6d6d6; --fg3: #adadad; --stroke: #3d3d3d;
+    --brand: #479ef5; --brand-soft: #0e2a47; --teal: #4bc7c9; --teal-soft: #0f3233; --orange: #f4975b; --orange-soft: #3d2312;
+    --lane1: #1d2530; --lane2: #1b2828; --lane3: #2a221d;
+    --shadow: 0 2px 4px rgba(0,0,0,.28), 0 0 2px rgba(0,0,0,.24);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141414; --card: #292929; --fg1: #ffffff; --fg2: #d6d6d6; --fg3: #adadad; --stroke: #3d3d3d;
+  --brand: #479ef5; --brand-soft: #0e2a47; --teal: #4bc7c9; --teal-soft: #0f3233; --orange: #f4975b; --orange-soft: #3d2312;
+  --lane1: #1d2530; --lane2: #1b2828; --lane3: #2a221d;
+  --shadow: 0 2px 4px rgba(0,0,0,.28), 0 0 2px rgba(0,0,0,.24);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg1); font-family: var(--font); font-size: 14px; line-height: 20px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 1160px; margin: 0 auto; display: grid; gap: 20px; }
+
+header { display: grid; gap: 10px; }
+.rule { height: 4px; width: 120px; border-radius: 2px; background: linear-gradient(90deg, #0f6cbd, #7b52d9 55%, #d13ba3); }
+.eyebrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pill { font-size: 12px; font-weight: 600; line-height: 16px; padding: 2px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); }
+.pill.muted { background: var(--card); color: var(--fg3); border: 1px solid var(--stroke); }
+h1 { margin: 0; font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; }
+.lede { margin: 0; color: var(--fg2); font-size: 16px; line-height: 24px; max-width: 70ch; }
+
+.card { background: var(--card); border-radius: 8px; box-shadow: var(--shadow); }
+figure { margin: 0; display: grid; gap: 0; }
+.scroll { overflow-x: auto; padding: 12px; }
+figcaption { padding: 12px 20px 16px; border-top: 1px solid var(--stroke); color: var(--fg2); font-size: 14px; }
+
+svg { display: block; width: 100%; min-width: 900px; height: auto; font-family: var(--font); color: var(--fg1); }
+.lane1 { fill: var(--lane1); } .lane2 { fill: var(--lane2); } .lane3 { fill: var(--lane3); }
+.lane-title { font-size: 12px; font-weight: 600; }
+.c-brand { fill: var(--brand); } .c-teal { fill: var(--teal); } .c-orange { fill: var(--orange); }
+.node { fill: var(--card); }
+.node-out { fill: var(--card); stroke: var(--stroke); }
+.ring-brand { fill: none; stroke: var(--brand); stroke-width: 1.5; }
+.ring-teal { fill: none; stroke: var(--teal); stroke-width: 2; }
+.ring-orange { fill: none; stroke: var(--orange); stroke-width: 1.2; }
+.ico-bg-brand { fill: var(--brand-soft); } .ico-bg-teal { fill: var(--teal-soft); } .ico-bg-orange { fill: var(--orange-soft); }
+.ico-brand { fill: none; stroke: var(--brand); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ico-teal { fill: none; stroke: var(--teal); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ico-orange { fill: none; stroke: var(--orange); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.t1 { font-size: 14px; font-weight: 600; fill: var(--fg1); }
+.t2 { font-size: 12px; fill: var(--fg3); }
+.t-edge { font-size: 12px; font-weight: 600; fill: var(--teal); }
+.num { fill: var(--brand); } .num-t { font-size: 11px; font-weight: 700; fill: #ffffff; }
+.edge { stroke: var(--fg3); stroke-width: 1.5; fill: none; }
+.edge-teal { stroke: var(--teal); stroke-width: 2; fill: none; }
+.edge-dash { stroke: var(--orange); stroke-width: 1.3; fill: none; stroke-dasharray: 4 3; }
+.head { fill: var(--fg3); } .head-teal { fill: var(--teal); } .head-orange { fill: var(--orange); }
+.gate { fill: var(--brand); }
+.gate-t { font-size: 13px; font-weight: 600; fill: #ffffff; }
+.dark-on-gate { fill: #ffffff; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.fact { padding: 16px 18px; display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: start; }
+.fact .ic { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; background: var(--brand-soft); }
+.fact .ic svg { min-width: 0; width: 20px; height: 20px; }
+.fact strong { display: block; font-size: 14px; font-weight: 600; }
+.fact p { margin: 2px 0 0; color: var(--fg2); font-size: 13px; line-height: 18px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="rule" aria-hidden="true"></div>
+    <div class="eyebrow"><span class="pill">Copilot Cowork plugin</span><span class="pill muted">Skill + MCP connector on Azure</span></div>
+    <h1>Offsite Planner</h1>
+    <p class="lede">You ask Copilot Cowork in one sentence to plan an offsite for a team spread across several countries. It picks dates with no public holidays, compares three destinations on flights, hotel, travel time, CO₂ and weather, and prepares an Excel sheet, a vote email and a calendar hold.</p>
+  </header>
+
+  <figure class="card">
+    <div class="scroll">
+      <svg viewBox="0 0 1120 530" role="img" aria-label="Flow: Cowork in Microsoft 365 finds the team, asks the Azure connector for holiday-free dates, checks calendars, asks the connector to compare three destinations using public data, then builds the Excel, email draft and calendar hold. Nothing is sent until the user approves.">
+        <defs>
+          <filter id="sh" x="-10%" y="-10%" width="120%" height="140%">
+            <feDropShadow dx="0" dy="1.5" stdDeviation="1.6" flood-color="#000" flood-opacity="0.16"/>
+          </filter>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
+          <marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-teal"/></marker>
+          <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-orange"/></marker>
+        </defs>
+
+        <!-- Lanes -->
+        <rect x="8" y="8" width="1104" height="242" rx="8" class="lane1"/>
+        <text x="28" y="34" class="lane-title c-brand">MICROSOFT 365 · COPILOT COWORK</text>
+        <rect x="8" y="290" width="1104" height="116" rx="8" class="lane2"/>
+        <text x="28" y="316" class="lane-title c-teal">AZURE FUNCTIONS · OFFSITE DATA CONNECTOR</text>
+        <rect x="8" y="430" width="1104" height="94" rx="8" class="lane3"/>
+        <text x="28" y="456" class="lane-title c-orange">PUBLIC DATA · FREE APIs, CACHED</text>
+
+        <!-- 1 Request -->
+        <g filter="url(#sh)"><rect x="24" y="96" width="160" height="96" rx="8" class="node"/></g>
+        <rect x="24" y="96" width="160" height="96" rx="8" class="ring-brand"/>
+        <circle cx="48" cy="120" r="14" class="ico-bg-brand"/>
+        <path d="M41 114 h14 a2 2 0 0 1 2 2 v7 a2 2 0 0 1 -2 2 h-8 l-4 3 v-3 h-2 a2 2 0 0 1 -2 -2 v-7 a2 2 0 0 1 2 -2z" class="ico-brand"/>
+        <circle cx="170" cy="110" r="9" class="num"/><text x="170" y="114" text-anchor="middle" class="num-t">1</text>
+        <text x="40" y="156" class="t1">Your request</text>
+        <text x="40" y="174" class="t2">"Plan a June offsite</text>
+        <text x="40" y="188" class="t2">for my team"</text>
+
+        <!-- 2 Team -->
+        <g filter="url(#sh)"><rect x="210" y="96" width="160" height="96" rx="8" class="node"/></g>
+        <rect x="210" y="96" width="160" height="96" rx="8" class="ring-brand"/>
+        <circle cx="234" cy="120" r="14" class="ico-bg-brand"/>
+        <circle cx="231" cy="116" r="3" class="ico-brand"/><path d="M225 127 a6 5 0 0 1 12 0" class="ico-brand"/>
+        <circle cx="239" cy="117" r="2.4" class="ico-brand"/><path d="M238.5 122 a5 4.5 0 0 1 6 5" class="ico-brand"/>
+        <circle cx="356" cy="110" r="9" class="num"/><text x="356" y="114" text-anchor="middle" class="num-t">2</text>
+        <text x="226" y="156" class="t1">Find the team</text>
+        <text x="226" y="174" class="t2">Direct reports and</text>
+        <text x="226" y="188" class="t2">their cities (Entra ID)</text>
+
+        <!-- 3 Dates -->
+        <g filter="url(#sh)"><rect x="396" y="96" width="160" height="96" rx="8" class="node"/></g>
+        <rect x="396" y="96" width="160" height="96" rx="8" class="ring-brand"/>
+        <circle cx="420" cy="120" r="14" class="ico-bg-brand"/>
+        <rect x="413" y="114" width="14" height="13" rx="2" class="ico-brand"/><path d="M413 118.5 h14 M417 112 v3 M423 112 v3" class="ico-brand"/>
+        <circle cx="542" cy="110" r="9" class="num"/><text x="542" y="114" text-anchor="middle" class="num-t">3</text>
+        <text x="412" y="156" class="t1">Pick the dates</text>
+        <text x="412" y="174" class="t2">No holidays, most</text>
+        <text x="412" y="188" class="t2">people free (Outlook)</text>
+
+        <!-- 4 Compare -->
+        <g filter="url(#sh)"><rect x="582" y="96" width="160" height="96" rx="8" class="node"/></g>
+        <rect x="582" y="96" width="160" height="96" rx="8" class="ring-brand"/>
+        <circle cx="606" cy="120" r="14" class="ico-bg-brand"/>
+        <path d="M600 127 v-6 M606 127 v-11 M612 127 v-8" class="ico-brand"/>
+        <circle cx="728" cy="110" r="9" class="num"/><text x="728" y="114" text-anchor="middle" class="num-t">4</text>
+        <text x="598" y="156" class="t1">Compare 3 places</text>
+        <text x="598" y="174" class="t2">Flights + hotel cost,</text>
+        <text x="598" y="188" class="t2">travel, CO₂, weather</text>
+
+        <!-- 5 Outputs -->
+        <g filter="url(#sh)">
+          <rect x="772" y="62" width="176" height="44" rx="6" class="node"/>
+          <rect x="772" y="122" width="176" height="44" rx="6" class="node"/>
+          <rect x="772" y="182" width="176" height="44" rx="6" class="node"/>
+        </g>
+        <rect x="772" y="62" width="176" height="44" rx="6" class="ring-brand"/>
+        <rect x="772" y="122" width="176" height="44" rx="6" class="ring-brand"/>
+        <rect x="772" y="182" width="176" height="44" rx="6" class="ring-brand"/>
+        <rect x="785" y="75" width="16" height="18" rx="2" class="ico-brand"/><path d="M785 81 h16 M785 87 h16 M791 75 v18" class="ico-brand"/>
+        <text x="812" y="89" class="t1">Excel comparison</text>
+        <rect x="784" y="137" width="18" height="13" rx="2" class="ico-brand"/><path d="M784 138 l9 7 l9 -7" class="ico-brand"/>
+        <text x="812" y="149" class="t1">Vote email draft</text>
+        <rect x="785" y="196" width="16" height="15" rx="2" class="ico-brand"/><path d="M785 200.5 h16 M789 203.5 l2.5 3 l5 -5.5" class="ico-brand"/>
+        <text x="812" y="209" class="t1">Calendar hold</text>
+        <circle cx="940" cy="56" r="9" class="num"/><text x="940" y="60" text-anchor="middle" class="num-t">5</text>
+
+        <!-- 6 Approval -->
+        <polygon points="986,144 1046,84 1106,144 1046,204" class="gate" filter="url(#sh)"/>
+        <path d="M1046 112 l-11 4 v8 c0 7 5 11 11 13 c6 -2 11 -6 11 -13 v-8 z" fill="none" class="dark-on-gate" style="fill:none;stroke:#ffffff;stroke-width:1.5"/>
+        <text x="1046" y="158" text-anchor="middle" class="gate-t">You</text>
+        <text x="1046" y="174" text-anchor="middle" class="gate-t">approve</text>
+        <text x="1046" y="226" text-anchor="middle" class="t2">Nothing sent or</text>
+        <text x="1046" y="240" text-anchor="middle" class="t2">booked without you</text>
+
+        <!-- Flow arrows row 1 -->
+        <line x1="184" y1="144" x2="208" y2="144" class="edge" marker-end="url(#a)"/>
+        <line x1="370" y1="144" x2="394" y2="144" class="edge" marker-end="url(#a)"/>
+        <line x1="556" y1="144" x2="580" y2="144" class="edge" marker-end="url(#a)"/>
+        <path d="M742 144 H756 V84 H770" class="edge" marker-end="url(#a)"/>
+        <line x1="756" y1="144" x2="770" y2="144" class="edge" marker-end="url(#a)"/>
+        <path d="M756 144 V204 H770" class="edge" marker-end="url(#a)"/>
+        <line x1="948" y1="144" x2="984" y2="144" class="edge" marker-end="url(#a)"/>
+
+        <!-- Connector calls -->
+        <g filter="url(#sh)"><rect x="396" y="330" width="160" height="62" rx="8" class="node"/></g>
+        <rect x="396" y="330" width="160" height="62" rx="8" class="ring-teal"/>
+        <circle cx="420" cy="361" r="14" class="ico-bg-teal"/>
+        <rect x="413" y="355" width="14" height="13" rx="2" class="ico-teal"/><path d="M413 359.5 h14 M417 353 v3 M423 353 v3" class="ico-teal"/>
+        <text x="442" y="357" class="t1">Holiday check</text>
+        <text x="442" y="375" class="t2">Azure call 1 of 2</text>
+
+        <g filter="url(#sh)"><rect x="582" y="330" width="160" height="62" rx="8" class="node"/></g>
+        <rect x="582" y="330" width="160" height="62" rx="8" class="ring-teal"/>
+        <circle cx="606" cy="361" r="14" class="ico-bg-teal"/>
+        <path d="M608 352 l-7 10 h5 l-2 9 l7 -11 h-5 z" class="ico-teal"/>
+        <text x="628" y="357" class="t1">Score & rank</text>
+        <text x="628" y="375" class="t2">Azure call 2 of 2</text>
+
+        <line x1="460" y1="192" x2="460" y2="328" class="edge-teal" marker-end="url(#at)"/>
+        <line x1="492" y1="330" x2="492" y2="194" class="edge-teal" marker-end="url(#at)"/>
+        <text x="454" y="262" text-anchor="end" class="t-edge">countries</text>
+        <text x="498" y="262" class="t-edge">free dates</text>
+
+        <line x1="646" y1="192" x2="646" y2="328" class="edge-teal" marker-end="url(#at)"/>
+        <line x1="678" y1="330" x2="678" y2="194" class="edge-teal" marker-end="url(#at)"/>
+        <text x="640" y="284" text-anchor="end" class="t-edge">cities + head counts</text>
+        <text x="684" y="284" class="t-edge">ranked top 3</text>
+
+        <!-- Public data -->
+        <rect x="244" y="464" width="164" height="50" rx="6" class="node"/><rect x="244" y="464" width="164" height="50" rx="6" class="ring-orange"/>
+        <circle cx="268" cy="489" r="13" class="ico-bg-orange"/>
+        <g transform="translate(268 489)"><rect x="-7" y="-6" width="14" height="13" rx="2" class="ico-orange"/><path d="M-7 -1.5 h14 M-3 -8 v3 M3 -8 v3" class="ico-orange"/><circle cx="0" cy="3" r="1.6" class="c-orange"/></g>
+        <text x="290" y="485" class="t1">Public holidays</text>
+        <text x="290" y="503" class="t2">Nager.Date</text>
+        <rect x="418" y="464" width="164" height="50" rx="6" class="node"/><rect x="418" y="464" width="164" height="50" rx="6" class="ring-orange"/>
+        <circle cx="442" cy="489" r="13" class="ico-bg-orange"/>
+        <g transform="translate(442 489)"><circle r="3.5" class="ico-orange"/><path d="M0 -8 v2 M0 6 v2 M-8 0 h2 M6 0 h2 M-5.7 -5.7 l1.4 1.4 M4.3 4.3 l1.4 1.4 M-5.7 5.7 l1.4 -1.4 M4.3 -4.3 l1.4 -1.4" class="ico-orange"/></g>
+        <text x="464" y="485" class="t1">Weather history</text>
+        <text x="464" y="503" class="t2">Open-Meteo</text>
+        <rect x="592" y="464" width="164" height="50" rx="6" class="node"/><rect x="592" y="464" width="164" height="50" rx="6" class="ring-orange"/>
+        <circle cx="616" cy="489" r="13" class="ico-bg-orange"/>
+        <g transform="translate(616 489)"><path d="M-7 -3 h12 l-3 -3 M7 3 h-12 l3 3" class="ico-orange"/></g>
+        <text x="638" y="485" class="t1">Exchange rates</text>
+        <text x="638" y="503" class="t2">ECB (Frankfurter)</text>
+        <rect x="766" y="464" width="164" height="50" rx="6" class="node"/><rect x="766" y="464" width="164" height="50" rx="6" class="ring-orange"/>
+        <circle cx="790" cy="489" r="13" class="ico-bg-orange"/>
+        <g transform="translate(790 489)"><path d="M0 -8 c1.2 0 1.5 1.5 1.5 3 v3 l6.5 4 v2 l-6.5 -2 v4 l2 1.5 v1.5 l-3.5 -1 l-3.5 1 v-1.5 l2 -1.5 v-4 l-6.5 2 v-2 l6.5 -4 v-3 c0 -1.5 0.3 -3 1.5 -3 z" class="ico-orange"/></g>
+        <text x="812" y="485" class="t1">Flight prices</text>
+        <text x="812" y="503" class="t2">Google Flights</text>
+        <rect x="940" y="464" width="164" height="50" rx="6" class="node"/><rect x="940" y="464" width="164" height="50" rx="6" class="ring-orange"/>
+        <circle cx="964" cy="489" r="13" class="ico-bg-orange"/>
+        <g transform="translate(964 489)"><path d="M-8 6 v-11 M-8 2 h16 v4 M-8 -1 h16 M-4 -1 v-3 h9 a3 3 0 0 1 3 3" class="ico-orange"/><circle cx="-5" cy="-3" r="1.6" class="ico-orange"/></g>
+        <text x="986" y="485" class="t1">Hotel rates</text>
+        <text x="986" y="503" class="t2">Google Hotels</text>
+
+        <path d="M476 392 V424 H326 V462" class="edge-dash" marker-end="url(#ao)"/>
+        <path d="M620 392 V424 H500 V462" class="edge-dash" marker-end="url(#ao)"/>
+        <line x1="674" y1="392" x2="674" y2="462" class="edge-dash" marker-end="url(#ao)"/>
+        <path d="M712 392 V416 H848 V462" class="edge-dash" marker-end="url(#ao)"/>
+        <path d="M732 392 V408 H1022 V462" class="edge-dash" marker-end="url(#ao)"/>
+      </svg>
+    </div>
+    <figcaption>Cowork handles the conversation and the documents. The connector on Azure does the calculations in two calls, which keeps the AI's work per run small. Only city names and head counts leave Microsoft 365. Prices come from Google Flights and Google Hotels through SerpApi (250 free searches a month), and the Azure side costs under $1 a month.</figcaption>
+  </figure>
+
+</div>
+</body>
+</html>

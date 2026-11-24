@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.azure/
+mcp-server/local.settings.json
+plugin/appPackage/build/
+plugin/env/.env.*.user
+plugin/env/.env.local
+.DS_Store
+plugin/env/.env.dev
+.env
+*.zip
+*.bak
+.vscode/

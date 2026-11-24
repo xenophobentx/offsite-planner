@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: offsite-planner
+infra:
+  path: infra
+services:
+  mcp:
+    project: ./mcp-server
+    language: ts
+    host: function
+    remoteBuild: true

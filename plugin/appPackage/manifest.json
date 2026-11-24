@@ -1,0 +1,52 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.1.0",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Kornel Felfoldi",
+    "websiteUrl": "https://github.com/xenophobentx/offsite-planner",
+    "privacyUrl": "https://github.com/xenophobentx/offsite-planner#privacy",
+    "termsOfUseUrl": "https://github.com/xenophobentx/offsite-planner/blob/main/LICENSE"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Offsite Planner${{APP_NAME_SUFFIX}}",
+    "full": "Offsite Planner for Copilot Cowork"
+  },
+  "description": {
+    "short": "Plan a multi-country team offsite: dates, destinations, Excel and vote email.",
+    "full": "Plans a team offsite for people in several European cities. It finds dates that avoid public holidays and fit the team's calendars, compares three destinations on flight and hotel cost, travel time, CO2 and typical weather, and prepares an Excel comparison, a vote email draft and calendar holds. It plans only and never books anything."
+  },
+  "accentColor": "#2563EB",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "${{MCP_SERVER_DOMAIN}}"
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/offsite-planner"
+    }
+  ],
+  "agentConnectors": [
+    {
+      "id": "offsite-data",
+      "displayName": "Offsite Data",
+      "description": "Holiday-free date windows and offsite destination comparison: flights, hotels, cost in EUR, travel time, CO2, typical weather and a weighted score in one call. Read-only.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "${{MCP_SERVER_URL}}",
+          "mcpToolDescription": {
+            "file": "tools/offsite-data-tools.json"
+          }
+        }
+      }
+    }
+  ]
+}

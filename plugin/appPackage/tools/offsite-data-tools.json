@@ -1,0 +1,162 @@
+{
+  "tools": [
+    {
+      "name": "plan_dates",
+      "title": "Find holiday-free offsite dates",
+      "description": "Returns up to 5 date windows in a month that avoid national public holidays in all given countries. Use it before checking calendars. Default: 2 nights, arriving on Tuesday.",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "countries": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2
+            },
+            "description": "ISO 3166-1 alpha-2 codes of the team members' countries, e.g. [\"HU\",\"GB\"]"
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2025,
+            "maximum": 2035
+          },
+          "month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "nights": {
+            "default": 2,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "start_weekday": {
+            "default": "tuesday",
+            "description": "Arrival weekday",
+            "type": "string",
+            "enum": [
+              "sunday",
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday"
+            ]
+          }
+        },
+        "required": [
+          "countries",
+          "year",
+          "month"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "idempotentHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "compare_destinations",
+      "title": "Compare offsite destinations",
+      "description": "Compares up to 3 offsite destinations for a team in one call: round-trip flights from each origin city, a well-rated hotel for the dates, total cost in EUR (flights + hotel), travel time, CO2, typical weather for the month, and a weighted score with a ranking. It never books anything. Pass one entry per origin city with the number of people there, not one per person. If destinations is empty, the server picks 3. Call it once; do not recalculate its numbers.",
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "origins": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "string",
+                  "description": "City name or IATA code"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "city",
+                "count"
+              ]
+            },
+            "description": "Team members grouped by city"
+          },
+          "date": {
+            "type": "string",
+            "description": "Outbound date, YYYY-MM-DD"
+          },
+          "return_date": {
+            "type": "string",
+            "description": "Return date, YYYY-MM-DD"
+          },
+          "destinations": {
+            "description": "Up to 3 city names or IATA codes; omit to let the server pick",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "weights": {
+            "description": "Optional scoring weights; default cost 0.35, travel_time 0.25, weather 0.15, co2 0.15, stops 0.10",
+            "type": "object",
+            "properties": {
+              "cost": {
+                "type": "number",
+                "minimum": 0
+              },
+              "travel_time": {
+                "type": "number",
+                "minimum": 0
+              },
+              "weather": {
+                "type": "number",
+                "minimum": 0
+              },
+              "co2": {
+                "type": "number",
+                "minimum": 0
+              },
+              "stops": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "rooms": {
+            "description": "Hotel rooms; default one per person",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "origins",
+          "date",
+          "return_date"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true,
+        "idempotentHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    }
+  ]
+}
