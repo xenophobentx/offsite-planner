@@ -2,6 +2,8 @@
 
 A Microsoft 365 Copilot Cowork plugin that plans a team offsite across countries.
 
+![Animated example: Cowork finds the team and their cities, picks dates without public holidays, ranks three destinations and prepares an Excel comparison, a vote email and a calendar hold](./assets/demo.svg)
+
 ## Summary
 
 Offsite Planner is a Copilot Cowork plugin. You ask in one sentence, for example *"Plan a June 2027 offsite for my team. Compare three destinations."*, and Cowork:
